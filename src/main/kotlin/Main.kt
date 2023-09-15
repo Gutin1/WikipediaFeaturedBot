@@ -1,9 +1,3 @@
-import Main.localCalender
-import Main.parser
-import Main.pubDateFormatter
-import Main.schedule
-import Main.scope
-import Main.timer
 import com.prof18.rssparser.RssParser
 import com.prof18.rssparser.model.RssChannel
 import com.prof18.rssparser.model.RssItem
@@ -31,9 +25,14 @@ import java.util.Timer
 import java.util.TimerTask
 import java.util.concurrent.TimeUnit
 
+lateinit var main: Main
+
 fun main(args: Array<String>) {
-    val config = Main.configuration
     val logger = LoggerFactory.getLogger("Main")
+    logger.info("Starting with arguments ${args.toList()}")
+    main = Main(logger)
+
+    val config = main.configuration
 
     val discord: JDA = try {
         JDABuilder.createLight(config.discordBotToken)
@@ -45,22 +44,23 @@ fun main(args: Array<String>) {
         return
     }
 
-    timer.schedule(FrontPage(logger, config, discord), TimeUnit.SECONDS.toMillis(1))
+    val frontPageTask = FrontPage(logger, config, discord)
 
-    schedule(FrontPage(logger, config, discord), config)
+    if (args[0] == "now") main.timer.schedule(frontPageTask, TimeUnit.SECONDS.toMillis(2))
+    main.schedule(frontPageTask, config)
 
     return
 }
 
-object Main {
+class Main(val logger: Logger) {
     val timer = Timer()
     val parser = RssParser()
     val scope = CoroutineScope(Dispatchers.Default + Job())
     val pubDateFormatter: DateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz")
     val localCalender: Calendar = Calendar.getInstance()
 
-    private val configLocation: File = File(Main::class.java.protectionDomain.codeSource.location.toURI()).resolve("..")
-    val configuration: Config = Configuration.load<Config>(configLocation, "config.json")
+    private val configLocation: File = File(Main::class.java.protectionDomain.codeSource.location.toURI()).parentFile
+    val configuration: Config = Configuration(logger).load<Config>(configLocation, "config.json")
 
     fun schedule(task: TimerTask, config: Config) {
         val now: ZonedDateTime = ZonedDateTime.now().withZoneSameInstant(TimeZone.getTimeZone("CST").toZoneId())
@@ -93,7 +93,7 @@ data class Config(
 
 class FrontPage(private val logger: Logger, private val config: Config, private val jda: JDA) : TimerTask() {
     override fun run() {
-        scope.launch {
+        main.scope.launch {
             val discordChannel = jda.getTextChannelById(config.sendChannelId)!! // just throw the nullpo
 
             val frontPage = getFrontPage()
@@ -105,7 +105,7 @@ class FrontPage(private val logger: Logger, private val config: Config, private 
     }
 
     private suspend fun getFrontPage(): RssChannel {
-        return parser.getRssChannel(config.rssChannel)
+        return main.parser.getRssChannel(config.rssChannel)
     }
 
     private fun sendMessage(discordChannel: TextChannel, messageEmbed: MessageEmbed) {
@@ -142,11 +142,11 @@ class FrontPage(private val logger: Logger, private val config: Config, private 
     private fun getTodaysEntry(feed: RssChannel): RssItem {
         return feed.items.first {
             val date = it.pubDate ?: return@first false
-            val pubDate = pubDateFormatter.parse(date)
+            val pubDate = main.pubDateFormatter.parse(date)
             val calender = Calendar.getInstance(TimeZone.getTimeZone("GMT"))
             calender.time = pubDate
 
-            calender.get(Calendar.DAY_OF_YEAR) == localCalender.get(Calendar.DAY_OF_YEAR)
+            calender.get(Calendar.DAY_OF_YEAR) == main.localCalender.get(Calendar.DAY_OF_YEAR)
         }
     }
 }
