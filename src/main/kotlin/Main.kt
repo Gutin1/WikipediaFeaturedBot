@@ -88,7 +88,7 @@ data class Config(
     val rssChannel: String,
     val discordBotToken: String,
     val sendChannelId: Long,
-    val mentionRole: Long
+    val mentionRole: Long?
 )
 
 class FrontPage(private val logger: Logger, private val config: Config, private val jda: JDA) : TimerTask() {
@@ -109,7 +109,7 @@ class FrontPage(private val logger: Logger, private val config: Config, private 
     }
 
     private fun sendMessage(discordChannel: TextChannel, messageEmbed: MessageEmbed) {
-        discordChannel.sendMessage("<@&${config.mentionRole}>").queue()
+        config.mentionRole?.let { discordChannel.sendMessage("<@&${it}>").queue() }
         discordChannel.sendMessageEmbeds(messageEmbed).queue()
     }
 
