@@ -20,6 +20,7 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.ZonedDateTime
 import java.util.Calendar
+import java.util.Date
 import java.util.TimeZone
 import java.util.Timer
 import java.util.TimerTask
@@ -46,7 +47,7 @@ fun main(args: Array<String>) {
 
     val frontPageTask = FrontPage(logger, config, discord)
 
-    if (args[0] == "now") main.timer.schedule(frontPageTask, TimeUnit.SECONDS.toMillis(2))
+//    if (args[0] == "now") main.timer.schedule(frontPageTask, TimeUnit.SECONDS.toMillis(2))
     main.schedule(frontPageTask, config)
 
     return
@@ -70,12 +71,16 @@ class Main(val logger: Logger) {
             .withSecond(0)
 
         if (time.isBefore(now) || time.isEqual(now)) {
-            time = now.plusDays(1).withHour(config.sendHour)
+            time = now
+                .plusDays(1)
+                .withHour(config.sendHour)
+                .withMinute(config.sendMinute)
+                .withSecond(0)
         }
 
         val delay = (time.toEpochSecond() * 1000L) - System.currentTimeMillis()
 
-        time.toEpochSecond()
+        logger.info("Executing next at ${Date(delay + System.currentTimeMillis())}")
         timer.schedule(task, delay, config.sendDelay)
     }
 }
