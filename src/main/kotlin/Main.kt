@@ -47,7 +47,11 @@ fun main(args: Array<String>) {
 
     val frontPageTask = FrontPage(logger, config, discord)
 
-//    if (args[0] == "now") main.timer.schedule(frontPageTask, TimeUnit.SECONDS.toMillis(2))
+    if (args[0] == "now") {
+        main.timer.schedule(frontPageTask, TimeUnit.SECONDS.toMillis(2))
+        return
+    }
+
     main.schedule(frontPageTask, config)
 
     return
@@ -58,7 +62,7 @@ class Main(val logger: Logger) {
     val parser = RssParser()
     val scope = CoroutineScope(Dispatchers.Default + Job())
     val pubDateFormatter: DateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz")
-    val localCalender: Calendar = Calendar.getInstance()
+    val localCalender: Calendar get() = Calendar.getInstance()
 
     private val configLocation: File = File(Main::class.java.protectionDomain.codeSource.location.toURI()).parentFile
     val configuration: Config = Configuration(logger).load<Config>(configLocation, "config.json")
