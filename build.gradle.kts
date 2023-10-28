@@ -6,9 +6,6 @@ plugins {
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
-group = "dev.gutin"
-version = "1.0-SNAPSHOT"
-
 repositories {
     mavenCentral()
     maven("https://m2.dv8tion.net/releases/")
@@ -34,8 +31,9 @@ application {
     mainClass.set("MainKt")
 }
 
-tasks.jar {
-    dependsOn("shadowJar")
+tasks.shadowJar {
+    destinationDirectory.set(file("$buildDir"))
+    archiveFileName.set("WikipediaFeaturedBot.jar")
 
     manifest { attributes["Main-Class"] = "MainKt" }
 }

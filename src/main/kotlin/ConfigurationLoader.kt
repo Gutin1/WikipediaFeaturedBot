@@ -6,7 +6,7 @@ import org.slf4j.Logger
 import java.io.File
 import java.io.IOException
 
-class Configuration(val logger: Logger) {
+class ConfigurationLoader(val logger: Logger) {
     @PublishedApi
     @OptIn(ExperimentalSerializationApi::class)
     internal val json = Json {
