@@ -1,10 +1,6 @@
 import com.prof18.rssparser.RssParser
 import com.prof18.rssparser.model.RssChannel
 import com.prof18.rssparser.model.RssItem
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
@@ -19,13 +15,12 @@ import java.util.TimeZone
 
 class SendFrontPageTask(private val logger: Logger, private val config: WikipediaBotConfiguration, private val jda: JDA) : Runnable {
     private val parser = RssParser()
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
     private val localCalender: Calendar get() = Calendar.getInstance()
     private val pubDateFormatter: DateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz")
 
     fun getChannel() = jda.getTextChannelById(config.sendChannelId)
 
-    override fun run() = runBlocking {
+    override fun run() {
         val discordChannel = getChannel()!! // just throw the nullpo
         val frontPage = getFrontPage()
         val embed = getEmbed(frontPage)
@@ -35,13 +30,13 @@ class SendFrontPageTask(private val logger: Logger, private val config: Wikipedi
         sendMessage(discordChannel, embed)
     }
 
-    private suspend fun getFrontPage(): RssChannel {
-        return parser.getRssChannel(config.rssChannel)
+    private fun getFrontPage(): RssChannel = runBlocking {
+        return@runBlocking parser.getRssChannel(config.rssChannel)
     }
 
     private fun sendMessage(discordChannel: TextChannel, messageEmbed: MessageEmbed) {
-        config.mentionRole?.let { discordChannel.sendMessage("<@&${it}>").queue() }
-        discordChannel.sendMessageEmbeds(messageEmbed).queue()
+        config.mentionRole?.let { discordChannel.sendMessage("<@&${it}>").complete() }
+        discordChannel.sendMessageEmbeds(messageEmbed).complete()
     }
 
     private fun getEmbed(featuredFeed: RssChannel): MessageEmbed {

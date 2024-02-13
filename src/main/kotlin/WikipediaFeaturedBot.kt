@@ -30,6 +30,7 @@ class WikipediaFeaturedBot {
                 .disableCache(CacheFlag.values().toList())
                 .setEnableShutdownHook(false)
                 .build()
+                .awaitReady()
         } catch (exception: Exception) {
             logger.warn("Failed to start JDA", exception)
             exception.printStackTrace()
@@ -38,28 +39,10 @@ class WikipediaFeaturedBot {
 
         val frontPageTask = SendFrontPageTask(logger, configuration, jda)
 
-        // Wait until the channel is loaded
-        val start = System.currentTimeMillis()
-        while (true) {
-            val time = System.currentTimeMillis()
-            val difference = time - start
-
-            logger.debug("Channel: ${frontPageTask.getChannel().toString()}")
-
-            if (frontPageTask.getChannel() != null) {
-                logger.info("Connected to channel [${frontPageTask.getChannel()!!.name}] in $difference ms")
-                break
-            }
-
-            if (difference > TimeUnit.SECONDS.toMillis(15)) {
-                logger.error("Could not find channel, aborting")
-                exitProcess(1)
-            }
-
-            Thread.sleep(100)
-        }
+        logger.info("Connected to channel [${frontPageTask.getChannel()!!.name}]")
 
         if (arguments.getOrNull(0) == "immediate") {
+            logger.info("Executing message immediately and shutting down")
             wikipediaFeaturedBot.scheduler.runImmediate(frontPageTask).thenAccept { exitProcess(1) }
         }
 
